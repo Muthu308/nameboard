@@ -303,6 +303,34 @@
 
   .card.single-side .half { height: var(--single-h); }
 
+  /* ---------------- Sticker label sheet (grid, no fold) ---------------- */
+  #sheet.is-labels {
+    display: block;
+    max-width: none;
+  }
+  .label-sheet {
+    display: grid;
+    justify-content: center;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .label-card {
+    width: var(--label-w);
+    height: var(--label-h);
+    background: var(--paper);
+    border: 1px dashed #cfc3e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    text-align: center;
+    overflow: hidden;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
   .p-name { font-weight: 800; line-height: 1.05; word-break: break-word; color: var(--name-color); }
   .p-designation { font-weight: 600; margin-top: 10px; color: var(--desig-color); }
   .p-institute { font-weight: 700; margin-top: 6px; color: var(--inst-color); }
@@ -333,6 +361,7 @@
     #midCol { overflow: visible; padding: 0; background: #fff; }
     #sheet { margin: 0; max-width: none; }
     .card { box-shadow: none; border: none; margin: 0; }
+    .label-card { box-shadow: none; border: 1px dashed #ccc; }
     .fold-line::after { color: #ccc; }
   }
 
@@ -348,7 +377,7 @@
     <i class="bi bi-person-badge-fill"></i>
     <div>
       <h1>Name Board Generator</h1>
-      <p class="tagline">Fold card (2-sided tent, reads from both sides of table) &amp; Single side (flat card, one face only) name boards, built and previewed live portal</p>
+      <p class="tagline">Fold card (2-sided tent) · Single side (flat card) · Sticker labels (grid sheet) — built and previewed live portal</p>
       
     </div>
   </div>
@@ -417,17 +446,29 @@
     <select id="boardType" style="width:100%;">
       <option value="fold">Fold card (2-sided tent, reads from both sides of table)</option>
       <option value="single">Single side (flat card, one face only)</option>
+      <option value="labels">Sticker labels (grid sheet, no fold)</option>
     </select>
     <p style="font-size: 11px; color:#777; margin: 8px 0 0;">
       <b>Fold card:</b> two halves, top one upside-down — fold and stand it up like a tent.<br>
-      <b>Single side:</b> one flat, upright panel — for badges or stands read from one side.
+      <b>Single side:</b> one flat, upright panel — for badges or stands read from one side.<br>
+      <b>Sticker labels:</b> many small labels laid out in a grid on A4 sheets, for peel-off label stock — no folding.
     </p>
 
-    <h2>Card size</h2>
-    <div class="controls-row" style="margin-top:0;">
-      <label style="margin:0;">Width (in) <input id="cardW" type="number" value="11" step="0.1"></label>
+    <h2 id="cardSizeHeading">Card size</h2>
+    <div id="cardSizeControls" class="controls-row" style="margin-top:0;">
+      <label id="cardWLabel" style="margin:0;">Width (in) <input id="cardW" type="number" value="11" step="0.1"></label>
       <label id="halfHLabel" style="margin:0;">Half height (in) <input id="halfH" type="number" value="2" step="0.1"></label>
       <label id="singleHLabel" style="margin:0; display:none;">Height (in) <input id="singleH" type="number" value="5" step="0.1"></label>
+    </div>
+
+    <h2 id="labelSizeHeading" style="display:none;">Label sheet layout</h2>
+    <div id="labelSizeControls" class="controls-row" style="margin-top:0; display:none;">
+      <label style="margin:0;">Label width (in) <input id="labelW" type="number" value="2.5" step="0.1"></label>
+      <label style="margin:0;">Label height (in) <input id="labelH" type="number" value="1.5" step="0.1"></label>
+      <label style="margin:0;">Columns <input id="labelCols" type="number" value="3" step="1" min="1"></label>
+      <label style="margin:0;">Col gap (in) <input id="labelColGap" type="number" value="0.1" step="0.05" min="0"></label>
+      <label style="margin:0;">Row gap (in) <input id="labelRowGap" type="number" value="0.1" step="0.05" min="0"></label>
+      <label style="margin:0;">Page margin (in) <input id="labelPageMargin" type="number" value="0.3" step="0.05" min="0"></label>
     </div>
 
     <h2>Font sizes</h2>
@@ -466,9 +507,10 @@
     <h2>Board Preview</h2>
     <p>
       This is exactly what will print. <b>To get the final PDF:</b> click
-      <b>Print / Save as PDF</b> above, then set <i>Destination</i> to <b>Save as PDF</b>,
-      <i>Paper size</i> to <b>A4</b>, <i>Layout</i> to <b>Landscape</b>, and turn off
-      "fit to page" scaling so the fold lines up correctly.
+      <b>Print / Save as PDF</b> above, then set <i>Destination</i> to <b>Save as PDF</b>
+      and <i>Paper size</i> to <b>A4</b> — the page orientation switches automatically
+      (landscape for fold/single cards, portrait for label sheets). Turn off
+      "fit to page" scaling so the sizing stays accurate.
     </p>
   </div>
   <div id="sheet"></div>
@@ -652,6 +694,21 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
   }
 });
 
+function updatePageStyle(boardType, labelMargin) {
+  let styleEl = document.getElementById('pageSizeStyle');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'pageSizeStyle';
+    document.head.appendChild(styleEl);
+  }
+  if (boardType === 'labels') {
+    const margin = (labelMargin === undefined || isNaN(labelMargin)) ? 0.3 : labelMargin;
+    styleEl.textContent = `@page { size: A4 portrait; margin: ${margin}in; }`;
+  } else {
+    styleEl.textContent = `@page { size: A4 landscape; margin: 0.15in; }`;
+  }
+}
+
 function buildCards() {
   let data;
   try {
@@ -674,7 +731,7 @@ function buildCards() {
     return;
   }
 
-  const boardType = document.getElementById('boardType').value; // 'fold' or 'single'
+  const boardType = document.getElementById('boardType').value; // 'fold', 'single', or 'labels'
   const cardW = document.getElementById('cardW').value + 'in';
   const halfH = document.getElementById('halfH').value + 'in';
   const singleH = document.getElementById('singleH').value + 'in';
@@ -694,6 +751,47 @@ function buildCards() {
   document.documentElement.style.setProperty('--fold-color', document.getElementById('foldColor').value);
 
   sheet.innerHTML = '';
+  sheet.classList.toggle('is-labels', boardType === 'labels');
+
+  if (boardType === 'labels') {
+    const labelW = parseFloat(document.getElementById('labelW').value) || 2.5;
+    const labelH = parseFloat(document.getElementById('labelH').value) || 1.5;
+    const cols = parseInt(document.getElementById('labelCols').value, 10) || 3;
+    const colGap = parseFloat(document.getElementById('labelColGap').value) || 0;
+    const rowGap = parseFloat(document.getElementById('labelRowGap').value) || 0;
+    const pageMargin = parseFloat(document.getElementById('labelPageMargin').value);
+
+    document.documentElement.style.setProperty('--label-w', labelW + 'in');
+    document.documentElement.style.setProperty('--label-h', labelH + 'in');
+    updatePageStyle('labels', pageMargin);
+
+    const grid = document.createElement('div');
+    grid.className = 'label-sheet';
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${labelW}in)`;
+    grid.style.gap = `${rowGap}in ${colGap}in`;
+
+    data.forEach(person => {
+      const name = person.name || '';
+      const designation = person.designation || '';
+      const institute = person.institute || '';
+      const notes = person.notes || '';
+
+      const labelCard = document.createElement('div');
+      labelCard.className = 'label-card';
+      labelCard.innerHTML = `
+        <div class="p-name" style="font-size:${nameSize}">${name}</div>
+        ${designation ? `<div class="p-designation" style="font-size:${desigSize}">${designation}</div>` : ''}
+        ${institute ? `<div class="p-institute" style="font-size:${instSize}">${institute}</div>` : ''}
+        ${notes ? `<div class="p-notes" style="font-size:${notesSize}">${notes}</div>` : ''}
+      `;
+      grid.appendChild(labelCard);
+    });
+
+    sheet.appendChild(grid);
+    return;
+  }
+
+  updatePageStyle(boardType);
 
   data.forEach((person, i) => {
     const name = person.name || '';
@@ -739,9 +837,18 @@ function buildCards() {
 }
 
 document.getElementById('boardType').addEventListener('change', () => {
-  const isSingle = document.getElementById('boardType').value === 'single';
-  document.getElementById('halfHLabel').style.display = isSingle ? 'none' : '';
+  const type = document.getElementById('boardType').value;
+  const isSingle = type === 'single';
+  const isLabels = type === 'labels';
+
+  document.getElementById('halfHLabel').style.display = (isSingle || isLabels) ? 'none' : '';
   document.getElementById('singleHLabel').style.display = isSingle ? '' : 'none';
+
+  document.getElementById('cardSizeHeading').style.display = isLabels ? 'none' : '';
+  document.getElementById('cardSizeControls').style.display = isLabels ? 'none' : '';
+  document.getElementById('labelSizeHeading').style.display = isLabels ? '' : 'none';
+  document.getElementById('labelSizeControls').style.display = isLabels ? '' : 'none';
+
   buildCards();
 });
 
