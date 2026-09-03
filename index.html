@@ -336,6 +336,83 @@
   .p-institute { font-weight: 700; margin-top: 6px; color: var(--inst-color); }
   .p-notes { font-family: "Inter", Arial, sans-serif; font-weight: 500; font-style: italic; margin-top: 6px; color: var(--notes-color); }
 
+  /* ---------------- Mail-merge label table (Word-style grid) ---------------- */
+  .label-card.label-card-merge { padding: 0; }
+  .label-table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-family: "Inter", Arial, sans-serif;
+    color: var(--name-color);
+  }
+  .label-table td {
+    padding: 3px 6px;
+    overflow: hidden;
+    word-break: break-word;
+    vertical-align: middle;
+  }
+  .label-table.bordered,
+  .label-table.bordered td { border: 1px solid var(--ink); }
+
+  /* ---------------- Mail-merge designer (left panel) ---------------- */
+  .col-chip {
+    display: inline-block;
+    background: #f1ecfb;
+    color: var(--ink);
+    border: 1px solid #d9cdf0;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    font-family: Arial, sans-serif;
+    margin: 2px 4px 2px 0;
+  }
+  .template-row {
+    border: 1px solid #e4e0ea;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #faf8fd;
+  }
+  .template-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .template-row-head b { font-size: 11.5px; color: var(--ink); font-family: Arial, sans-serif; }
+  .template-cell {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    background: #fff;
+  }
+  .template-cell select, .template-cell input[type="text"] {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  .template-cell input[type="number"] { width: 52px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 5px; }
+  .template-cell .bold-toggle { display: flex; align-items: center; gap: 3px; margin: 0; font-size: 11px; }
+  .tc-remove, .tr-remove, .tc-add {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .tc-remove { background: #fff; color: #a33; border: 1px solid #a33; }
+  .tr-remove { background: #fff; color: #a33; border: 1px solid #a33; }
+  .tc-add { background: #fff; color: var(--ink); border: 1px solid var(--ink); }
+
   /* ---------------- Responsive ---------------- */
   @media (max-width: 900px) {
     #controlsBar { grid-template-columns: 1fr; max-height: none; overflow-y: visible; }
@@ -362,6 +439,7 @@
     #sheet { margin: 0; max-width: none; }
     .card { box-shadow: none; border: none; margin: 0; }
     .label-card { box-shadow: none; border: 1px dashed #ccc; }
+    .label-card.label-card-merge { border: none; }
     .fold-line::after { color: #ccc; }
   }
 
@@ -398,24 +476,62 @@
       <b>Text:</b> one line per person, <code>Name | Designation | Institute | Notes</code>.
     </p>
 
-    <h2>Add Details</h2>
-    <div class="controls-row" style="flex-direction:column; align-items:stretch; margin-top:0;">
-      <input id="oneName" type="text" placeholder="Name (required)">
-      <div id="oneNameError" class="field-error">Please enter a name before adding.</div>
-      <input id="oneDesignation" type="text" placeholder="Designation">
-      <input id="oneInstitute" type="text" placeholder="Institute">
-      <input id="oneNotes" type="text" placeholder="Notes (e.g. VIP, dietary note)">
-      <button id="addOneBtn" type="button">Add to list</button>
+    <div class="controls-row" style="margin-top:12px;">
+      <label class="field-inline" style="margin:0; font-weight:600;">
+        <input type="checkbox" id="mailMergeToggle">
+        Mail merge mode — design a label template and feed in any Excel columns
+      </label>
     </div>
+    <p style="font-size: 11px; color:#777; margin: 6px 0 0;">
+      Like Word's mail merge to labels: upload an Excel sheet with any column headers, lay out a bordered
+      table template once, and every row becomes one label automatically.
+    </p>
 
-    <h2>Participant list (JSON)</h2>
-    <textarea id="dataInput">[
+    <div id="manualEntryPanel">
+      <h2>Add Details</h2>
+      <div class="controls-row" style="flex-direction:column; align-items:stretch; margin-top:0;">
+        <input id="oneName" type="text" placeholder="Name (required)">
+        <div id="oneNameError" class="field-error">Please enter a name before adding.</div>
+        <input id="oneDesignation" type="text" placeholder="Designation">
+        <input id="oneInstitute" type="text" placeholder="Institute">
+        <input id="oneNotes" type="text" placeholder="Notes (e.g. VIP, dietary note)">
+        <button id="addOneBtn" type="button">Add to list</button>
+      </div>
+
+      <h2>Participant list (JSON)</h2>
+      <textarea id="dataInput">[
   { "name": "Mr. Muthu Raj", "designation": "Engineer", "institute": "SVCET", "notes": "" },
   { "name": "Mr. Muthu Raj", "designation": "Engineer", "institute": "", "notes": "" }  
 ]</textarea>
-    <div id="jsonStatus"></div>
-    <div class="controls-row">
-      <button id="clearListBtn" type="button" style="background:#fff; color:#a33; border:1.5px solid #a33;">Clear list</button>
+      <div id="jsonStatus"></div>
+      <div class="controls-row">
+        <button id="clearListBtn" type="button" style="background:#fff; color:#a33; border:1.5px solid #a33;">Clear list</button>
+      </div>
+    </div>
+
+    <div id="mailMergePanel" style="display:none;">
+      <h2>Detected columns</h2>
+      <div id="mergeColumnsList">
+        <span style="font-size:12px;color:#999;font-family:Arial;">Upload an Excel file to detect columns.</span>
+      </div>
+
+      <h2>Label template designer</h2>
+      <p style="margin-top:0;">Each row below becomes a table row inside every label. Add a cell for each Excel column you want shown, in the order you want it. Use <b>Merge cols/rows</b> to span a cell across neighbours (Word-style cell merge) — when a cell spans down into the next row(s), just don't add a cell in that same position on the rows it covers. <b>W</b> and <b>H</b> set an explicit cell width (% of the label) and height (px); leave blank for automatic sizing.</p>
+      <div class="controls-row" style="margin-top:0; margin-bottom:6px;">
+        <label style="margin:0;">Table cell padding (px) <input id="mergeCellPadding" type="number" value="3" min="0" step="1"></label>
+      </div>
+      <div id="templateRows"></div>
+      <div class="controls-row" style="margin-top:0;">
+        <button id="addTemplateRowBtn" type="button" style="background:#fff; color:var(--ink); border:1.5px solid var(--ink);">+ Add row</button>
+        <button id="autoTemplateBtn" type="button" style="background:#fff; color:var(--ink); border:1.5px solid var(--ink);">Auto-build from columns</button>
+      </div>
+      <div class="controls-row" style="margin-top:10px;">
+        <label class="field-inline" style="margin:0;">
+          <input type="checkbox" id="mailMergeBordersToggle" checked>
+          Show table borders (Word-style grid)
+        </label>
+      </div>
+      <div id="mergeStatus" style="font-size:11.5px; color:#666; font-family:Arial, sans-serif; margin-top:8px;"></div>
     </div>
 
     <div class="alert alert-info border-start border-4 border-info shadow-sm mt-3" role="alert">
@@ -517,6 +633,16 @@
 </div>
 
 <script>
+let mergeColumns = [];   // detected Excel column headers, in order
+let mergeRows = [];      // raw row objects keyed by original column headers
+let template = [];       // array of rows; each row is an array of cell configs
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 function showToast(message, type) {
   const stack = document.getElementById('toastStack');
   const icons = { error: 'bi-x-circle-fill', warn: 'bi-exclamation-triangle-fill', success: 'bi-check-circle-fill' };
@@ -649,13 +775,335 @@ function normalizeRow(row) {
   };
 }
 
+function renderColumnChips() {
+  const el = document.getElementById('mergeColumnsList');
+  if (!mergeColumns.length) {
+    el.innerHTML = '<span style="font-size:12px;color:#999;font-family:Arial;">Upload an Excel file to detect columns.</span>';
+    return;
+  }
+  el.innerHTML = mergeColumns.map(c => `<span class="col-chip">${escapeHtml(c)}</span>`).join('');
+}
+
+function makeTemplateCell(overrides) {
+  return Object.assign({
+    type: 'field',
+    field: mergeColumns[0] || '',
+    text: '',
+    bold: false,
+    align: 'center',
+    valign: 'middle',
+    size: 12,
+    colspan: 1,
+    rowspan: 1,
+    width: '',
+    height: ''
+  }, overrides || {});
+}
+
+function defaultTemplateFromColumns() {
+  template = mergeColumns.map((col, idx) => ([
+    makeTemplateCell({ field: col, bold: idx === 0, size: idx === 0 ? 20 : 12 })
+  ]));
+  renderTemplateDesigner();
+}
+
+function fieldOptionsHtml(selected) {
+  if (!mergeColumns.length) return '<option value="">(no columns yet)</option>';
+  return mergeColumns.map(c => `<option value="${escapeHtml(c)}"${c === selected ? ' selected' : ''}>${escapeHtml(c)}</option>`).join('');
+}
+
+
+function renderTemplateDesigner() {
+  const container = document.getElementById('templateRows');
+  container.innerHTML = '';
+
+  if (!template.length) {
+    container.innerHTML = '<p style="font-size:12px;color:#888;font-family:Arial;margin:0 0 8px;">No rows yet — click "Auto-build from columns" after uploading a file, or "+ Add row" to start from scratch.</p>';
+    return;
+  }
+
+  template.forEach((row, rIdx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'template-row';
+
+    const head = document.createElement('div');
+    head.className = 'template-row-head';
+    head.innerHTML = `<b>Row ${rIdx + 1}</b>`;
+
+    const headBtns = document.createElement('div');
+    headBtns.style.cssText = 'display:flex; gap:6px;';
+
+    const addCellBtn = document.createElement('button');
+    addCellBtn.type = 'button';
+    addCellBtn.className = 'tc-add';
+    addCellBtn.textContent = '+ Cell';
+    addCellBtn.addEventListener('click', () => {
+      row.push(makeTemplateCell());
+      renderTemplateDesigner();
+      buildCards();
+    });
+
+    const removeRowBtn = document.createElement('button');
+    removeRowBtn.type = 'button';
+    removeRowBtn.className = 'tr-remove';
+    removeRowBtn.textContent = 'Remove row';
+    removeRowBtn.addEventListener('click', () => {
+      template.splice(rIdx, 1);
+      renderTemplateDesigner();
+      buildCards();
+    });
+
+    headBtns.appendChild(addCellBtn);
+    headBtns.appendChild(removeRowBtn);
+    head.appendChild(headBtns);
+    rowEl.appendChild(head);
+
+    row.forEach((cell, cIdx) => {
+      const cellEl = document.createElement('div');
+      cellEl.className = 'template-cell';
+
+      const typeSel = document.createElement('select');
+      typeSel.innerHTML = `<option value="field"${cell.type === 'field' ? ' selected' : ''}>Field</option><option value="text"${cell.type === 'text' ? ' selected' : ''}>Static text</option>`;
+      typeSel.addEventListener('change', () => {
+        cell.type = typeSel.value;
+        renderTemplateDesigner();
+        buildCards();
+      });
+      cellEl.appendChild(typeSel);
+
+      if (cell.type === 'field') {
+        const fieldSel = document.createElement('select');
+        fieldSel.innerHTML = fieldOptionsHtml(cell.field);
+        fieldSel.addEventListener('change', () => { cell.field = fieldSel.value; buildCards(); });
+        cellEl.appendChild(fieldSel);
+      } else {
+        const textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.placeholder = 'Static label text';
+        textInput.value = cell.text;
+        textInput.addEventListener('input', () => { cell.text = textInput.value; buildCards(); });
+        cellEl.appendChild(textInput);
+      }
+
+      const boldLabel = document.createElement('label');
+      boldLabel.className = 'bold-toggle';
+      const boldChk = document.createElement('input');
+      boldChk.type = 'checkbox';
+      boldChk.checked = !!cell.bold;
+      boldChk.addEventListener('change', () => { cell.bold = boldChk.checked; buildCards(); });
+      boldLabel.appendChild(boldChk);
+      boldLabel.appendChild(document.createTextNode('Bold'));
+      cellEl.appendChild(boldLabel);
+
+      const alignSel = document.createElement('select');
+      alignSel.title = 'Horizontal align';
+      alignSel.innerHTML = ['left', 'center', 'right'].map(a => `<option value="${a}"${cell.align === a ? ' selected' : ''}>${a[0].toUpperCase() + a.slice(1)}</option>`).join('');
+      alignSel.addEventListener('change', () => { cell.align = alignSel.value; buildCards(); });
+      cellEl.appendChild(alignSel);
+
+      const valignSel = document.createElement('select');
+      valignSel.title = 'Vertical align';
+      valignSel.innerHTML = ['top', 'middle', 'bottom'].map(v => `<option value="${v}"${(cell.valign || 'middle') === v ? ' selected' : ''}>${v[0].toUpperCase() + v.slice(1)}</option>`).join('');
+      valignSel.addEventListener('change', () => { cell.valign = valignSel.value; buildCards(); });
+      cellEl.appendChild(valignSel);
+
+      const sizeInput = document.createElement('input');
+      sizeInput.type = 'number';
+      sizeInput.min = '6';
+      sizeInput.title = 'Font size (px)';
+      sizeInput.value = cell.size;
+      sizeInput.addEventListener('input', () => { cell.size = parseInt(sizeInput.value, 10) || 12; buildCards(); });
+      cellEl.appendChild(sizeInput);
+
+      const pxLabel = document.createElement('span');
+      pxLabel.textContent = 'px';
+      pxLabel.style.cssText = 'font-size:11px; font-family:Arial; color:#888;';
+      cellEl.appendChild(pxLabel);
+
+      const spanWrap = document.createElement('span');
+      spanWrap.style.cssText = 'display:flex; align-items:center; gap:3px; border-left:1px solid #eee; padding-left:6px; margin-left:2px;';
+
+      const colspanLabel = document.createElement('span');
+      colspanLabel.textContent = 'Merge cols';
+      colspanLabel.style.cssText = 'font-size:10.5px; font-family:Arial; color:#888;';
+      spanWrap.appendChild(colspanLabel);
+
+      const colspanInput = document.createElement('input');
+      colspanInput.type = 'number';
+      colspanInput.min = '1';
+      colspanInput.title = 'Colspan — how many columns this cell merges across';
+      colspanInput.value = cell.colspan || 1;
+      colspanInput.style.width = '40px';
+      colspanInput.addEventListener('input', () => { cell.colspan = Math.max(1, parseInt(colspanInput.value, 10) || 1); buildCards(); });
+      spanWrap.appendChild(colspanInput);
+
+      const rowspanLabel = document.createElement('span');
+      rowspanLabel.textContent = 'rows';
+      rowspanLabel.style.cssText = 'font-size:10.5px; font-family:Arial; color:#888;';
+      spanWrap.appendChild(rowspanLabel);
+
+      const rowspanInput = document.createElement('input');
+      rowspanInput.type = 'number';
+      rowspanInput.min = '1';
+      rowspanInput.title = 'Rowspan — how many rows down this cell merges. Skip adding a cell in that column position on the rows it covers.';
+      rowspanInput.value = cell.rowspan || 1;
+      rowspanInput.style.width = '40px';
+      rowspanInput.addEventListener('input', () => { cell.rowspan = Math.max(1, parseInt(rowspanInput.value, 10) || 1); buildCards(); });
+      spanWrap.appendChild(rowspanInput);
+
+      cellEl.appendChild(spanWrap);
+
+      const sizeWrap = document.createElement('span');
+      sizeWrap.style.cssText = 'display:flex; align-items:center; gap:3px; border-left:1px solid #eee; padding-left:6px; margin-left:2px;';
+
+      const widthLabel = document.createElement('span');
+      widthLabel.textContent = 'W';
+      widthLabel.style.cssText = 'font-size:10.5px; font-family:Arial; color:#888;';
+      sizeWrap.appendChild(widthLabel);
+
+      const widthInput = document.createElement('input');
+      widthInput.type = 'number';
+      widthInput.min = '0';
+      widthInput.max = '100';
+      widthInput.title = 'Cell width, as a % of the label width (blank = auto/even)';
+      widthInput.placeholder = 'auto';
+      widthInput.value = cell.width || '';
+      widthInput.style.width = '48px';
+      widthInput.addEventListener('input', () => { cell.width = widthInput.value; buildCards(); });
+      sizeWrap.appendChild(widthInput);
+
+      const widthPct = document.createElement('span');
+      widthPct.textContent = '%';
+      widthPct.style.cssText = 'font-size:11px; font-family:Arial; color:#888;';
+      sizeWrap.appendChild(widthPct);
+
+      const heightLabel = document.createElement('span');
+      heightLabel.textContent = 'H';
+      heightLabel.style.cssText = 'font-size:10.5px; font-family:Arial; color:#888; margin-left:4px;';
+      sizeWrap.appendChild(heightLabel);
+
+      const heightInput = document.createElement('input');
+      heightInput.type = 'number';
+      heightInput.min = '0';
+      heightInput.title = 'Cell height in px (blank = auto)';
+      heightInput.placeholder = 'auto';
+      heightInput.value = cell.height || '';
+      heightInput.style.width = '48px';
+      heightInput.addEventListener('input', () => { cell.height = heightInput.value; buildCards(); });
+      sizeWrap.appendChild(heightInput);
+
+      const heightPx = document.createElement('span');
+      heightPx.textContent = 'px';
+      heightPx.style.cssText = 'font-size:11px; font-family:Arial; color:#888;';
+      sizeWrap.appendChild(heightPx);
+
+      cellEl.appendChild(sizeWrap);
+
+      const removeCellBtn = document.createElement('button');
+      removeCellBtn.type = 'button';
+      removeCellBtn.className = 'tc-remove';
+      removeCellBtn.textContent = '✕';
+      removeCellBtn.addEventListener('click', () => {
+        row.splice(cIdx, 1);
+        renderTemplateDesigner();
+        buildCards();
+      });
+      cellEl.appendChild(removeCellBtn);
+
+      rowEl.appendChild(cellEl);
+    });
+
+    container.appendChild(rowEl);
+  });
+}
+
+document.getElementById('mailMergeToggle').addEventListener('change', () => {
+  const on = document.getElementById('mailMergeToggle').checked;
+  document.getElementById('manualEntryPanel').style.display = on ? 'none' : '';
+  document.getElementById('mailMergePanel').style.display = on ? '' : 'none';
+
+  if (on) {
+    const boardTypeSel = document.getElementById('boardType');
+    if (boardTypeSel.value !== 'labels') {
+      boardTypeSel.value = 'labels';
+      boardTypeSel.dispatchEvent(new Event('change'));
+    }
+  }
+  buildCards();
+});
+
+document.getElementById('addTemplateRowBtn').addEventListener('click', () => {
+  template.push([makeTemplateCell()]);
+  renderTemplateDesigner();
+  buildCards();
+});
+
+document.getElementById('autoTemplateBtn').addEventListener('click', () => {
+  if (!mergeColumns.length) {
+    showToast('Upload an Excel file first so columns can be detected.', 'warn');
+    return;
+  }
+  defaultTemplateFromColumns();
+  buildCards();
+  showToast('Template rebuilt from detected columns.', 'success');
+});
+
+document.getElementById('mailMergeBordersToggle').addEventListener('change', buildCards);
+document.getElementById('mergeCellPadding').addEventListener('input', buildCards);
+
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   const lowerName = file.name.toLowerCase();
   const isExcel = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls');
+  const mailMergeOn = document.getElementById('mailMergeToggle').checked;
   const reader = new FileReader();
+
+  if (mailMergeOn) {
+    if (!isExcel && !lowerName.endsWith('.json')) {
+      showToast('Mail merge mode needs an Excel (.xlsx/.xls) or JSON file with column headers.', 'warn');
+      return;
+    }
+
+    reader.onload = (evt) => {
+      let rows;
+      try {
+        if (isExcel) {
+          const wb = XLSX.read(evt.target.result, { type: 'array' });
+          const firstSheet = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+        } else {
+          rows = JSON.parse(evt.target.result);
+        }
+        if (!Array.isArray(rows)) throw new Error('Expected a table of rows');
+      } catch (err) {
+        showToast('Could not read that file: ' + err.message, 'error');
+        return;
+      }
+
+      const cols = [];
+      rows.forEach(r => Object.keys(r || {}).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
+
+      mergeColumns = cols;
+      mergeRows = rows;
+      renderColumnChips();
+      document.getElementById('mergeStatus').textContent =
+        `Loaded ${mergeRows.length} record${mergeRows.length === 1 ? '' : 's'}, ${mergeColumns.length} column${mergeColumns.length === 1 ? '' : 's'} detected.`;
+
+      if (!template.length) defaultTemplateFromColumns();
+
+      showToast(`Loaded ${mergeRows.length} record${mergeRows.length === 1 ? '' : 's'} from ${file.name}.`, 'success');
+      buildCards();
+    };
+
+    if (isExcel) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+    return;
+  }
 
   reader.onload = (evt) => {
     let data;
@@ -709,7 +1157,88 @@ function updatePageStyle(boardType, labelMargin) {
   }
 }
 
+function renderMailMergeLabels(sheet) {
+  sheet.classList.add('is-labels');
+
+  const labelW = parseFloat(document.getElementById('labelW').value) || 2.5;
+  const labelH = parseFloat(document.getElementById('labelH').value) || 1.5;
+  const pageMargin = parseFloat(document.getElementById('labelPageMargin').value);
+  updatePageStyle('labels', pageMargin);
+
+  if (!mergeRows.length || !template.length) {
+    sheet.innerHTML = `
+      <div id="emptyState">
+        <i class="bi bi-table"></i>
+        <h3>Set up mail merge</h3>
+        <p>Upload an Excel file above, then build a label template using the detected columns — labels will appear here automatically, one per row.</p>
+      </div>`;
+    return;
+  }
+
+  const cols = parseInt(document.getElementById('labelCols').value, 10) || 3;
+  const colGap = parseFloat(document.getElementById('labelColGap').value) || 0;
+  const rowGap = parseFloat(document.getElementById('labelRowGap').value) || 0;
+  const bordered = document.getElementById('mailMergeBordersToggle').checked;
+  const cellPaddingRaw = parseInt(document.getElementById('mergeCellPadding').value, 10);
+  const cellPadding = isNaN(cellPaddingRaw) ? 3 : cellPaddingRaw;
+
+  document.documentElement.style.setProperty('--label-w', labelW + 'in');
+  document.documentElement.style.setProperty('--label-h', labelH + 'in');
+  document.documentElement.style.setProperty('--paper', document.getElementById('bgColor').value);
+
+  const grid = document.createElement('div');
+  grid.className = 'label-sheet';
+  grid.style.gridTemplateColumns = `repeat(${cols}, ${labelW}in)`;
+  grid.style.gap = `${rowGap}in ${colGap}in`;
+
+  mergeRows.forEach(record => {
+    const labelCard = document.createElement('div');
+    labelCard.className = 'label-card label-card-merge';
+
+    const tableEl = document.createElement('table');
+    tableEl.className = 'label-table' + (bordered ? ' bordered' : '');
+
+    template.forEach(row => {
+      if (!row.length) return;
+      const tr = document.createElement('tr');
+      row.forEach(cell => {
+        const td = document.createElement('td');
+        const value = cell.type === 'text'
+          ? (cell.text || '')
+          : String(record[cell.field] !== undefined ? record[cell.field] : '');
+        td.textContent = value;
+        td.style.fontWeight = cell.bold ? '800' : '500';
+        td.style.textAlign = cell.align || 'center';
+        td.style.verticalAlign = cell.valign || 'middle';
+        td.style.fontSize = (cell.size || 12) + 'px';
+        td.style.padding = cellPadding + 'px';
+        if (cell.colspan && cell.colspan > 1) td.colSpan = cell.colspan;
+        if (cell.rowspan && cell.rowspan > 1) td.rowSpan = cell.rowspan;
+        if (cell.width) td.style.width = cell.width + '%';
+        if (cell.height) td.style.height = cell.height + 'px';
+        tr.appendChild(td);
+      });
+      tableEl.appendChild(tr);
+    });
+
+    labelCard.appendChild(tableEl);
+    grid.appendChild(labelCard);
+  });
+
+  sheet.innerHTML = '';
+  sheet.appendChild(grid);
+}
+
 function buildCards() {
+  const sheet = document.getElementById('sheet');
+  const boardType = document.getElementById('boardType').value; // 'fold', 'single', or 'labels'
+  const mailMergeOn = document.getElementById('mailMergeToggle').checked && boardType === 'labels';
+
+  if (mailMergeOn) {
+    renderMailMergeLabels(sheet);
+    return;
+  }
+
   let data;
   try {
     data = JSON.parse(document.getElementById('dataInput').value);
@@ -719,9 +1248,8 @@ function buildCards() {
     return;
   }
 
-  const sheet = document.getElementById('sheet');
-
   if (!Array.isArray(data) || data.length === 0) {
+    sheet.classList.toggle('is-labels', boardType === 'labels');
     sheet.innerHTML = `
       <div id="emptyState">
         <i class="bi bi-person-plus-fill"></i>
@@ -731,7 +1259,6 @@ function buildCards() {
     return;
   }
 
-  const boardType = document.getElementById('boardType').value; // 'fold', 'single', or 'labels'
   const cardW = document.getElementById('cardW').value + 'in';
   const halfH = document.getElementById('halfH').value + 'in';
   const singleH = document.getElementById('singleH').value + 'in';
@@ -849,11 +1376,26 @@ document.getElementById('boardType').addEventListener('change', () => {
   document.getElementById('labelSizeHeading').style.display = isLabels ? '' : 'none';
   document.getElementById('labelSizeControls').style.display = isLabels ? '' : 'none';
 
+  if (!isLabels) {
+    const mmToggle = document.getElementById('mailMergeToggle');
+    if (mmToggle.checked) {
+      mmToggle.checked = false;
+      document.getElementById('manualEntryPanel').style.display = '';
+      document.getElementById('mailMergePanel').style.display = 'none';
+    }
+  }
+
   buildCards();
 });
 
 document.getElementById('buildBtn').addEventListener('click', () => {
   buildCards();
+  if (document.getElementById('mailMergeToggle').checked && document.getElementById('boardType').value === 'labels') {
+    if (mergeRows.length) {
+      showToast(`Merged ${mergeRows.length} record${mergeRows.length === 1 ? '' : 's'} into the label template.`, 'success');
+    }
+    return;
+  }
   const data = getCurrentData();
   if (Array.isArray(data) && data.length) {
     showToast(`Board rebuilt with ${data.length} participant${data.length === 1 ? '' : 's'}.`, 'success');
